@@ -13,6 +13,8 @@ inyear:		.asciiz "\nNhap nam YEAR: "
 sday:	.byte 0:3
 smonth:	.byte 0:3
 syear:	.byte 0:5
+scanned_date:	.byte 0:11
+scan_date_error:	.asciiz "\nNgay thang nam nhap vao khong hop le!\nVui long nhap lai\n"
 
 start_option:	.asciiz "\n----------Ban hay chon 1 trong cac thao tac duoi day -----------\n"
 option1:	.asciiz "1. Xuat chuoi TIME theo dinh dang DD/MM/YYYY\n"
@@ -40,50 +42,60 @@ main:
 #	syscall
 #	j out_main
 	
-	# Scan day, month, year
-	# Temporarily format xx, xx, xxxx (e.g. 02, 12, 2000)
-	la $a0, inday
-	li $v0, 4
-	syscall
-	la $a0, sday
-	addi $a1, $0, 3
-	li $v0, 8
-	syscall
-	# save day to $s0
-	addi $a1, $a1, -1
-	jal string_to_int
-	add $s0, $0, $v0
-	
-	la $a0, inmonth
-	li $v0, 4
-	syscall
-	la $a0, smonth
-	addi $a1, $0, 3
-	li $v0, 8
-	syscall
-	# save month to $s1
-	addi $a1, $a1, -1
-	jal string_to_int
-	add $s1, $0, $v0
-	
-	la $a0, inyear
-	li $v0, 4
-	syscall
-	la $a0, syear
-	addi $a1, $0, 5
-	li $v0, 8
-	syscall
-	# save month to $s2
-	addi $a1, $a1, -1
-	jal string_to_int
-	add $s2, $0, $v0
-	
-	# Call date function
-	add $a0, $0, $s0
-	add $a1, $0, $s1
-	add $a2, $0, $s2
-	la $a3, time
-	jal date
+	main_scan_date:
+		# Scan day, month, year
+		la $a0, inday
+		li $v0, 4
+		syscall
+		la $a0, sday
+		addi $a1, $0, 3
+		li $v0, 8
+		syscall
+		# save day to $s0
+		addi $a1, $a1, -1
+		jal string_to_int
+		add $s0, $0, $v0
+		
+		la $a0, inmonth
+		li $v0, 4
+		syscall
+		la $a0, smonth
+		addi $a1, $0, 3
+		li $v0, 8
+		syscall
+		# save month to $s1
+		addi $a1, $a1, -1
+		jal string_to_int
+		add $s1, $0, $v0
+		
+		la $a0, inyear
+		li $v0, 4
+		syscall
+		la $a0, syear
+		addi $a1, $0, 5
+		li $v0, 8
+		syscall
+		# save month to $s2
+		addi $a1, $a1, -1
+		jal string_to_int
+		add $s2, $0, $v0
+		
+		# Call date function
+		add $a0, $0, $s0
+		add $a1, $0, $s1
+		add $a2, $0, $s2
+		la $a3, scanned_date
+		jal date
+		
+		la $a0, scanned_date
+		jal is_valid
+		bne $v0, $0, main_scan_date_out
+		la $a0, scan_date_error
+		li $v0, 4
+		syscall
+		j main_scan_date
+		
+	main_scan_date_out:
 	
 	# Print options
 	la $a0, start_option
@@ -140,13 +152,13 @@ main:
 	
 	
 	main_option1:
-		la $a0, time
+		la $a0, scanned_date
 		li $v0, 4
 		syscall
 		j main_option_out
 		
 	main_option3:
-		la $a0, time
+		la $a0, scanned_date
 		jal weekday
 		add $a0, $0, $v0
 		li $v0, 4
@@ -154,7 +166,7 @@ main:
 		j main_option_out
 		
 	main_option4:
-		la $a0, time
+		la $a0, scanned_date
 		jal leap_year
 		add $a0, $0, $v0
 		li $v0, 1
@@ -162,7 +174,7 @@ main:
 		j main_option_out
 		
 	main_option6:
-		la $a0, time
+		la $a0, scanned_date
 		jal nearest_leap_years
 		add $a0, $0, $v0
 		li $v0, 1
@@ -181,32 +193,42 @@ main:
 
 # int StringToInt(char* str)
 string_to_int:
-	addi $sp, $sp, -16
+	addi $sp, $sp, -20
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
 	sw $t0, 8($sp)
 	sw $t1, 12($sp)
-	
-	addi $v0, $0, 0
-	addi $t0, $0, 0
+	sw $t2, 16($sp)
+
+	addi $t2 $0, 0
+	add $t0, $0, $a0
 	string_to_int_loop:
-		add $t1, $a0, $t0
-		lb $t1, 0($t1)
+		lb $t1, 0($t0)
 		beq $t1, $0, string_to_int_out
 		beq $t1, '\n', string_to_int_out
 		beq $t1, ' ', string_to_int_out
+		
+		add $a0, $0, $t1
+		jal is_num
+		beq $v0, $0, string_to_int_not_num
+		
 		addi $t1, $t1, -48
-		mul $v0, $v0, 10
-		add $v0, $v0, $t1
+		mul $t2, $t2, 10
+		add $t2, $t2, $t1
 		addi $t0, $t0, 1
 		j string_to_int_loop
+	
+	string_to_int_not_num:
+		addi $t2, $0, 0
 	string_to_int_out:
+	add $v0, $0, $t2
 	
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
 	lw $t0, 8($sp)
 	lw $t1, 12($sp)
-	addi $sp, $sp, 16
+	lw $t2, 16($sp)
+	addi $sp, $sp, 20
 	jr $ra
 	
 
@@ -571,10 +593,11 @@ is_num:
 	
 # int DaysInMonth(int month, int year)
 days_in_month:
-	addi $sp, $sp, -12
+	addi $sp, $sp, -16
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
 	sw $a1, 8($sp)
+	sw $a2, 12($sp)
 	
 	beq $a0, 4, days_in_month_l1
 	beq $a0, 6, days_in_month_l1
@@ -589,7 +612,12 @@ days_in_month:
 		addi $v0, $0, 30
 		j days_in_month_out
 	days_in_month_l2:
-		add $a0, $0, $a1
+		add $a2, $0, $a1
+		add $a0, $0, $0
+		add $a1, $0, $0
+		la $a3, time
+		jal date
+		add $a0, $0, $v0
 		jal leap_year
 		bne $v0, $0, days_in_month_l2_leap
 		addi $v0, $0, 28
@@ -601,7 +629,8 @@ days_in_month:
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
 	lw $a1, 8($sp)
-	addi $sp, $sp, 12
+	lw $a2, 12($sp)
+	addi $sp, $sp, 16
 	jr $ra
 
 
