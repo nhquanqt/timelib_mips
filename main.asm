@@ -1,7 +1,11 @@
 	.data
 check:	.asciiz "Check"
-data:	.asciiz "25/06/2021"
-time:	.byte 0:10
+data:	.asciiz "21/12/2020"
+time:	.byte 0:11
+month_table:		.word 0 3 3 6 1 4 6 2 5 0 3 5
+month_table_leap_year:	.word 6 2 3 6 1 4 6 2 5 0 3 5
+dayofweek:	.ascii "SunMonTueWedThuFriSat"
+out_weekday:	.byte 0:4
 
 inday:		.asciiz "\nNhap ngay DAY: "
 inmonth:	.asciiz "\nNhap thang MONTH: "
@@ -11,13 +15,13 @@ smonth:	.byte 0:3
 syear:	.byte 0:5
 
 start_option:	.asciiz "\n----------Ban hay chon 1 trong cac thao tac duoi day -----------\n"
-option1:	.asciiz "1. Xuat chuoi TIME theo đinh dang DD/MM/YYYY\n"
+option1:	.asciiz "1. Xuat chuoi TIME theo dinh dang DD/MM/YYYY\n"
 option2:	.asciiz "2. Chuyen doi chuoi TIME thanh mot trong cac dinh dang sau:\n"
 option2A:	.asciiz "	A. MM/DD/YYYY\n"
 option2B:	.asciiz "	B. Month DD, YYYY\n"
 option2C:	.asciiz "	C. DD Month, YYYY\n"
 option3:	.asciiz "3. Cho biet ngay vua nhap la ngay thu may trong tuan\n"
-option4:	.asciiz "4. Kiem tra nam trong chuoi TIME có phải la nam nhuan khong\n"
+option4:	.asciiz "4. Kiem tra nam trong chuoi TIME có phai la nam nhuan khong\n"
 option5:	.asciiz "5. Cho biet khoang thoi gian giua chuoi TIME_1 và TIME_2\n"
 option6:	.asciiz "6. Cho biet 2 nam nhuan gan nhat voi nam trong chuoi time\n"
 end_option:	.asciiz "----------------------------------------------------------------\n"
@@ -29,8 +33,15 @@ result:	.asciiz "\nKet qua: "
 	.text
 # void main()
 main:
+	la $a0, data
+	jal weekday
+	add $a0, $0, $v0
+	li $v0, 4
+	syscall
+	j out_main
+	
 	# Scan day, month, year
-	# Temporately format xx, xx, xxxx (e.g. 02, 12, 2000)
+	# Temporarily format xx, xx, xxxx (e.g. 02, 12, 2000)
 	la $a0, inday
 	li $v0, 4
 	syscall
@@ -66,6 +77,18 @@ main:
 	addi $a1, $a1, -1
 	jal string_to_int
 	add $s2, $0, $v0
+	
+	# Call date function
+	add $a0, $0, $s0
+	add $a1, $0, $s1
+	add $a2, $0, $s2
+	la $a3, time
+	jal date
+	
+	# Just for check
+	la $a0, time
+	li $v0, 4
+	syscall
 	
 	# Print options
 	la $a0, start_option
@@ -314,6 +337,77 @@ year:
 	addi $sp, $sp, 24
 	jr $ra
 	
+# char* Weekday(char* TIME)
+weekday:
+	addi $sp, $sp, -32
+	sw $ra, 0($sp)
+	sw $a0, 4($sp)
+	sw $t0, 8($sp)
+	sw $t1, 12($sp)
+	sw $t2, 16($sp)
+	sw $t3, 20($sp)
+	sw $t4, 24($sp)
+	sw $t5, 28($sp)
+	
+	jal day
+	add $t0, $0, $v0
+	jal month
+	add $t1, $0, $v0
+	jal year
+	add $t2, $0, $v0
+	jal leap_year
+	add $t3, $0, $v0
+	
+	bne $t3, $0, weekday_leap_year
+	la $t5, month_table
+	j weekday_leap_year_out
+	weekday_leap_year:
+		la $t5, month_table_leap_year
+	weekday_leap_year_out:
+	addi $t1, $t1, -1
+	sll $t1, $t1, 2
+	add $t1, $t1, $t5
+	lw $t1, 0($t1)
+	
+	addi $t4, $0, 100
+	div $t2, $t4
+	mfhi $t2
+	mflo $t4
+#	addi $t4, $t4, 1
+	
+	add $v0, $t0, $t1
+	add $v0, $v0, $t2
+	div $t2, $t2, 4
+	add $v0, $v0, $t2
+	add $v0, $v0, $t4
+	
+	addi $t4, $0, 7
+	div $v0, $t4
+	mfhi $v0
+	
+	la $t0, dayofweek
+	mul $t1, $v0, 3
+	add $t0, $t0, $t1
+	la $v0, out_weekday
+	lb $t1, 0($t0)
+	sb $t1, 0($v0)
+	lb $t1, 1($t0)
+	sb $t1, 1($v0)
+	lb $t1, 2($t0)
+	sb $t1, 2($v0)
+	
+	lw $ra, 0($sp)
+	lw $a0, 4($sp)
+	lw $t0, 8($sp)
+	lw $t1, 12($sp)
+	lw $t2, 16($sp)
+	lw $t3, 20($sp)
+	lw $t4, 24($sp)
+	lw $t5, 28($sp)
+	addi $sp, $sp, 32
+	jr $ra
+	
+
 # int LeapYear(char *TIME)
 leap_year:
 	addi $sp, $sp, -16
