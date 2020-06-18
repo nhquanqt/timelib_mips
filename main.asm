@@ -1,24 +1,27 @@
 	.data
-_check:	.asciiz "Check"
-_data:	.asciiz "18/06/2020"
-_time:	.byte 0:11
+_check:		.asciiz "Check"
+_data:		.asciiz "18/06/2020"
+_temp:		.byte 0:16
+_time:		.byte 0:16
+_time1:		.byte 0:16
+_time2:		.byte 0:16
 _month_table:		.word 0 3 3 6 1 4 6 2 5 0 3 5
 _month_table_leap_year:	.word 6 2 3 6 1 4 6 2 5 0 3 5
-_dayofweek:	.ascii "SunMonTueWedThuFriSat"
-_out_weekday:	.byte 0:4
+_dayofweek:		.ascii "SunMonTueWedThuFriSat"
+_out_weekday:		.byte 0:4
 
-_date_string:	.byte 0:11
+_date_string:	.byte 0:16
 _store_string:	.space 32
-_month_string:	.asciiz "JanFebMarAprMayJunJulAugSepOctNovDec"
+_month_string:		.asciiz "JanFebMarAprMayJunJulAugSepOctNovDec"
 _number_day_of_month:	.word 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 
 _inday:		.asciiz "\nNhap ngay DAY: "
 _inmonth:	.asciiz "\nNhap thang MONTH: "
 _inyear:	.asciiz "\nNhap nam YEAR: "
-_sday:		.byte 0:3
-_smonth:	.byte 0:3
-_syear:		.byte 0:5
-_scanned_date:	.byte 0:11
+_sday:		.byte 0:4
+_smonth:	.byte 0:4
+_syear:		.byte 0:8
+_scanned_date:	.byte 0:16
 _scan_date_error:	.asciiz "\nNgay thang nam nhap vao khong hop le!\nVui long nhap lai\n"
 
 _start_option:	.asciiz "\n----------Ban hay chon 1 trong cac thao tac duoi day -----------\n"
@@ -33,67 +36,15 @@ _option5:	.asciiz "5. Cho biet khoang thoi gian giua chuoi TIME_1 và TIME_2\n"
 _option6:	.asciiz "6. Cho biet 2 nam nhuan gan nhat voi nam trong chuoi time\n"
 _end_option:	.asciiz "----------------------------------------------------------------\n"
 
-_choose_option:	.asciiz "\nLua chon: "
-_option:	.byte 0
-_result:	.asciiz "\nKet qua: "
+_choose_option:		.asciiz "\nLua chon: "
+_choose_option2:	.asciiz "\nMoi nhap kieu dinh dang: "
+_result:		.asciiz "\nKet qua: "
 
 	.text
 # void main()
 main:
-	main_scan_date:
-		# Scan day, month, year
-		la $a0, _inday
-		li $v0, 4
-		syscall
-		la $a0, _sday
-		addi $a1, $0, 3
-		li $v0, 8
-		syscall
-		# save day to $s0
-		addi $a1, $a1, -1
-		jal string_to_int
-		add $s0, $0, $v0
-		
-		la $a0, _inmonth
-		li $v0, 4
-		syscall
-		la $a0, _smonth
-		addi $a1, $0, 3
-		li $v0, 8
-		syscall
-		# save month to $s1
-		addi $a1, $a1, -1
-		jal string_to_int
-		add $s1, $0, $v0
-		
-		la $a0, _inyear
-		li $v0, 4
-		syscall
-		la $a0, _syear
-		addi $a1, $0, 5
-		li $v0, 8
-		syscall
-		# save month to $s2
-		addi $a1, $a1, -1
-		jal string_to_int
-		add $s2, $0, $v0
-		
-		# Call date function
-		add $a0, $0, $s0
-		add $a1, $0, $s1
-		add $a2, $0, $s2
-		la $a3, _scanned_date
-		jal date
-		
-		la $a0, _scanned_date
-		jal is_valid
-		bne $v0, $0, main_scan_date_out
-		la $a0, _scan_date_error
-		li $v0, 4
-		syscall
-		j main_scan_date
-		
-	main_scan_date_out:
+	la $a0, _scanned_date
+	jal ScanDate
 	
 	# Print options
 	la $a0, _start_option
@@ -139,79 +90,220 @@ main:
 	syscall
 	add $s3, $0, $v0
 	
-	la $a0, _result
-	li $v0, 4
-	syscall
+	beq $s3, 1, main.option1
+	beq $s3, 2, main.option2
+	beq $s3, 3, main.option3
+	beq $s3, 4, main.option4
+	beq $s3, 5, main.option5
+	beq $s3, 6, main.option6
 	
-	beq $s3, 1, main_option1
-	beq $s3, 2, main_option2
-	beq $s3, 3, main_option3
-	beq $s3, 4, main_option4
-	beq $s3, 5, main_option5
-	beq $s3, 6, main_option6
-	
-	
-	main_option1:
+	main.option1:
+		la $a0, _result
+		li $v0, 4
+		syscall
 		la $a0, _scanned_date
 		li $v0, 4
 		syscall
-		j main_option_out
+		j main.option_out
 		
-	main_option2:
-		la $a0, _scanned_date
-		addi $a1, $0, 'A'
-		jal convert
-		addi $a1, $0, 'B'
-		jal convert
-		addi $a1, $0, 'C'
-		jal convert
-		j main_option_out
+	main.option2:
+		la $a0, _choose_option2
+		li $v0, 4
+		syscall
+		li $v0, 12
+		syscall
 		
-	main_option3:
+		add $t0, $0, $v0
+		la $a0, _result
+		li $v0, 4
+		syscall
 		la $a0, _scanned_date
-		jal weekday
+		beq $t0, 'A', main.option2.A
+		beq $t0, 'B', main.option2.B
+		beq $t0, 'C', main.option2.C
+		main.option2.A:
+			addi $a1, $0, 'A'
+			j main.option2.out
+		main.option2.B:
+			addi $a1, $0, 'B'
+			j main.option2.out
+		main.option2.C:
+			addi $a1, $0, 'C'
+			j main.option2.out
+		main.option2.out:
+		jal Convert
 		add $a0, $0, $v0
 		li $v0, 4
 		syscall
-		j main_option_out
+		j main.option_out
 		
-	main_option4:
+	main.option3:
 		la $a0, _scanned_date
-		jal leap_year
-		add $a0, $0, $v0
+		jal Weekday
+		add $t0, $0, $v0
+		la $a0, _result
+		li $v0, 4
+		syscall
+		add $a0, $0, $t0
+		li $v0, 4
+		syscall
+		j main.option_out
+		
+	main.option4:
+		la $a0, _scanned_date
+		jal LeapYear
+		add $t0, $0, $v0
+		la $a0, _result
+		li $v0, 4
+		syscall
+		add $a0, $0, $t0
 		li $v0, 1
 		syscall
-		j main_option_out
+		j main.option_out
 		
-	main_option5:
+	main.option5:
+		la $a0, _time
+		jal ScanDate
+		
 		la $a0, _scanned_date
-		la $a1, _data
+		la $a1, _time
 		jal GetTime
-		add $a0, $0, $v0
+		add $t0, $0, $v0
+		la $a0, _result
+		li $v0, 4
+		syscall
+		add $a0, $0, $t0
 		li $v0, 1
 		syscall
-		j main_option_out
+		j main.option_out
 		
-	main_option6:
+	main.option6:
 		la $a0, _scanned_date
-		jal nearest_leap_years
-		add $a0, $0, $v0
+		jal NearestLeapYears
+		add $t0, $0, $v0
+		add $t1, $0, $v1
+		la $a0, _result
+		li $v0, 4
+		syscall
+		add $a0, $0, $t0
 		li $v0, 1
 		syscall
 		li $a0, ' '
 		li $v0, 11
 		syscall
-		add $a0, $0, $v1
+		add $a0, $0, $t1
 		li $v0, 1
 		syscall
-		j main_option_out
+		j main.option_out
 	
-	main_option_out:
+	main.option_out:
 	
 	j out_main
 
+# void Memset(char* str, int size)
+Memset:
+	addi $sp, $sp, -20
+	sw $ra, 0($sp)
+	sw $a0, 4($sp)
+	sw $a1, 8($sp)
+	sw $t0, 12($sp)
+	sw $t1, 16($sp)
+	
+	addi $t0, $0, 0
+	Memset.loop:
+		beq $t0, $a1, Memset.out
+		add $t1, $a0, $t0
+		sb $0, 0($t1)
+	Memset.out:
+	lw $ra, 0($sp)
+	lw $a0, 4($sp)
+	lw $a1, 8($sp)
+	lw $t0, 12($sp)
+	lw $t1, 16($sp)	
+	addi $sp, $sp, 20
+	jr $ra
+
+# void ScanDate(char* TIME)
+ScanDate:
+	addi $sp, $sp, -36
+	sw $ra, 0($sp)
+	sw $a0, 4($sp)
+	sw $a1, 8($sp)
+	sw $a2, 12($sp)
+	sw $a3, 16($sp)
+	sw $t0, 20($sp)
+	sw $t1, 24($sp)
+	sw $t2, 28($sp)
+	sw $t3, 32($sp)
+	
+	add $t3, $0, $a0
+	ScanDate.start:
+		# Scan day, month, year
+		la $a0, _inday
+		li $v0, 4
+		syscall
+		la $a0, _sday
+		addi $a1, $0, 3
+		jal Memset
+		li $v0, 8
+		syscall
+		# save day to $t0
+		jal StringToInt
+		add $t0, $0, $v0
+		
+		la $a0, _inmonth
+		li $v0, 4
+		syscall
+		la $a0, _smonth
+		addi $a1, $0, 3
+		jal Memset
+		li $v0, 8
+		syscall
+		# save month to $t1
+		jal StringToInt
+		add $t1, $0, $v0
+		
+		la $a0, _inyear
+		li $v0, 4
+		syscall
+		la $a0, _syear
+		addi $a1, $0, 5
+		jal Memset
+		li $v0, 8
+		syscall
+		# save month to $t2
+		jal StringToInt
+		add $t2, $0, $v0
+		
+		# Call date function
+		add $a0, $0, $t0
+		add $a1, $0, $t1
+		add $a2, $0, $t2
+		add $a3, $0, $t3
+		jal Date
+		
+		add $a0, $0, $t3
+		jal IsValid
+		bne $v0, $0, ScanDate.end
+		la $a0, _scan_date_error
+		li $v0, 4
+		syscall
+		j ScanDate.start
+	ScanDate.end:
+	
+	lw $ra, 0($sp)
+	lw $a0, 4($sp)
+	lw $a1, 8($sp)
+	lw $a2, 12($sp)
+	lw $a3, 16($sp)
+	lw $t0, 20($sp)
+	lw $t1, 24($sp)
+	lw $t2, 28($sp)
+	lw $t3, 32($sp)
+	addi $sp, $sp, 36
+
 # int StringToInt(char* str)
-string_to_int:
+StringToInt:
 	addi $sp, $sp, -20
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -221,25 +313,25 @@ string_to_int:
 
 	addi $t2 $0, 0
 	add $t0, $0, $a0
-	string_to_int_loop:
+	StringToInt.loop:
 		lb $t1, 0($t0)
-		beq $t1, $0, string_to_int_out
-		beq $t1, '\n', string_to_int_out
-		beq $t1, ' ', string_to_int_out
+		beq $t1, $0, StringToInt.out
+		beq $t1, '\n', StringToInt.out
+		beq $t1, ' ', StringToInt.out
 		
 		add $a0, $0, $t1
-		jal is_num
-		beq $v0, $0, string_to_int_not_num
+		jal IsNum
+		beq $v0, $0, StringToInt.not_num
 		
 		addi $t1, $t1, -48
 		mul $t2, $t2, 10
 		add $t2, $t2, $t1
 		addi $t0, $t0, 1
-		j string_to_int_loop
+		j StringToInt.loop
 	
-	string_to_int_not_num:
-		addi $t2, $0, 0
-	string_to_int_out:
+		StringToInt.not_num:
+			addi $t2, $0, 0
+	StringToInt.out:
 	add $v0, $0, $t2
 	
 	lw $ra, 0($sp)
@@ -252,7 +344,7 @@ string_to_int:
 	
 
 # char* Date(int day, int month, int year, char* TIME)
-date:
+Date:
 	addi $sp, $sp, -28
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -319,260 +411,162 @@ date:
 	addi $sp, $sp, 28
 	jr $ra
 
-convert:
-	addi $t1, $0, 65
-	beq $a1, $t1, printA
-	addi $t1, $t1, 1
-	beq $a1, $t1, printB
-	addi $t1, $t1, 1
-	beq $a1, $t1, printC
-# Task 2, print TIME MM/DD/YYYY
-printA:
-	addi $sp, $sp, -8
-	sw $ra, 4($sp)
-	sw $a0, 0($sp)
+# char* Convert(char* TIME, char type)
+Convert:
+	addi $sp, $sp, -40
+	sw, $ra, 0($sp)
+	sw, $a0, 4($sp)
+	sw, $a1, 8($sp)
+	sw, $a2, 12($sp)
+	sw, $a3, 16($sp)
+	sw, $t0, 20($sp)
+	sw, $t1, 24($sp)
+	sw, $t2, 28($sp)
+	sw, $t3, 32($sp)
+	sw, $t4, 36($sp)
 	
+	add $t3, $0, $a0
+	jal Day
+	add $t0, $0, $v0
+	jal Month
+	add $t1, $0, $v0
+	jal Year
+	add $t2, $0, $v0
 	
-	la $v0, _store_string
-	la $t1, ($a0)
-	addi $t2, $0, 3
+	beq $a1, 'A', Convert.optionA
+	beq $a1, 'B', Convert.optionB
+	beq $a1, 'C', Convert.optionC
 	
-	mm_loop:
-		beq $t2, 5, plus_day
-		add $t3, $t1, $t2
+	Convert.optionA:
+		add $a0, $0, $t1
+		add $a1, $0, $t0
+		add $a2, $0, $t2
+		add $a3, $0, $t3
+		jal Date
+		j Convert.out
+	Convert.optionB:
+		addi $t1, $t1, -1
+		mul $t1, $t1, 3
+		la $t4, _month_string
+		add $t1, $t1, $t4
+		lb $t4, 0($t1)
+		sb $t4, 0($t3)
+		lb $t4, 1($t1)
+		sb $t4, 1($t3)
+		lb $t4, 2($t1)
+		sb $t4, 2($t3)
 		
-		lb $t0, ($t3) 
-		sb $t0, ($v0)
-		addi $t2, $t2, 1
-		addi $v0, $v0, 1
-		j mm_loop
+		addi $t4, $0, ' '
+		sb $t4, 3($t3)
 		
-	plus_day:
-		add $t2, $0, $0
-		addi $t0, $0, 47
-		sb $t0, ($v0)
-		addi $v0, $v0, 1
+		addi $t4, $0, 10
+		div $t0, $t4
+		mflo $t0
+		addi $t0, $t0, 48
+		sb $t0, 4($t3)
+		mfhi $t0
+		addi $t0, $t0, 48
+		sb $t0, 5($t3)
 		
-		dd_loop:
-			beq $t2, 2, plus_year
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j dd_loop
+		addi $t4, $0, ','
+		sb $t4, 6($t3)
+		addi $t4, $0, ' '
+		sb $t4, 7($t3)
+		
+		addi $t0, $0, 1000
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 8($t3)
+		
+		mfhi $t2
+		addi $t0, $0, 100
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 9($t3)
+		
+		mfhi $t2
+		addi $t0, $0, 10
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 10($t3)
+		
+		mfhi $t1
+		addi $t1, $t1, 48
+		sb $t1, 11($t3)
+		j Convert.out
+	Convert.optionC:
+		addi $t4, $0, 10
+		div $t0, $t4
+		mflo $t0
+		addi $t0, $t0, 48
+		sb $t0, 0($t3)
+		mfhi $t0
+		addi $t0, $t0, 48
+		sb $t0, 1($t3)
+		
+		addi $t4, $0, ' '
+		sb $t4, 2($t3)
+		
+		addi $t1, $t1, -1
+		mul $t1, $t1, 3
+		la $t4, _month_string
+		add $t1, $t1, $t4
+		lb $t4, 0($t1)
+		sb $t4, 3($t3)
+		lb $t4, 1($t1)
+		sb $t4, 4($t3)
+		lb $t4, 2($t1)
+		sb $t4, 5($t3)
+		
+		addi $t4, $0, ','
+		sb $t4, 6($t3)
+		addi $t4, $0, ' '
+		sb $t4, 7($t3)
+		
+		addi $t0, $0, 1000
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 8($t3)
+		
+		mfhi $t2
+		addi $t0, $0, 100
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 9($t3)
+		
+		mfhi $t2
+		addi $t0, $0, 10
+		div $t2, $t0
+		mflo $t1
+		addi $t1, $t1, 48
+		sb $t1, 10($t3)
+		
+		mfhi $t1
+		addi $t1, $t1, 48
+		sb $t1, 11($t3)
+	Convert.out:
+	add $v0, $0, $t3
 	
-	plus_year: 
-		addi $t2, $0, 6
-		addi $t0, $0, 47
-		sb $t0, ($v0)
-		addi $v0, $v0, 1
-		
-		yy_loop:
-			beq $t2, 10, printA_out
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j yy_loop
-	
-	printA_out:
-		addi $t2, $0, 10
-		sb $t2, ($v0)
-		addi $v0, $v0, 1
-		addi $t2, $0, 0
-		sb $t2, ($v0)
-		
-		la $a0, _store_string
-		li $v0, 4
-		syscall
-		
-
-		lw $ra, 4($sp)	
-		lw $a0, 0($sp)
-		
-		addi $sp, $sp, 8
-		jr $ra	
-		
-
-# Task 2, Print Time Month DD, YYYY			
-printB:
-	addi $sp, $sp, -8
-	sw $ra, 4($sp)
-	sw $a0, 0($sp)
-	
-	jal month
-	add $t0, $v0, $0
-	addi $t0, $t0, -1
-	mul $t0, $t0, 3 # start index 
-	
-	addi $t1, $t0, 3 # end index
-	
-	la $v0, _store_string
-	la $t2, _month_string
-	printB.add_month:
-		beq $t0, $t1, printB.add_space
-		add $t3, $t0, $t2
-		lb $t4, ($t3)
-		sb $t4, ($v0)
-		
-		addi $t0, $t0, 1
-		addi $v0, $v0, 1
-		j printB.add_month
-		
-	printB.add_space:
-		addi $t4, $0, 32
-		sb $t4, ($v0)
-		addi $v0, $v0, 1
-	
-	
-	printB.add_day:
-		add $t2, $0, $0
-		la $t1, ($a0)
-		printB.dd_loop:
-			beq $t2, 2, printB.add_year
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j printB.dd_loop
-	
-	printB.add_year: 
-		addi $t4, $0, 44
-		sb $t4, ($v0)
-		addi $v0, $v0, 1
-		
-		addi $t4, $0, 32
-		sb $t4, ($v0)
-		addi $v0, $v0, 1
-		
-		addi $t2, $0, 6
-		
-		printB.yy_loop:
-			beq $t2, 10, printB_out
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j printB.yy_loop
-	
-	printB_out:
-		addi $t2, $0, 10
-		sb $t2, ($v0)
-		addi $v0, $v0, 1
-		addi $t2, $0, 0
-		sb $t2, ($v0)
-		
-		la $a0, _store_string
-		li $v0, 4
-		syscall
-		
-
-		lw $ra, 4($sp)	
-		lw $a0, 0($sp)
-		
-		addi $sp, $sp, 8
-		jr $ra			
-	
-# Task 2, print TIME DD Month, YYYY
-printC:
-	addi $sp, $sp, -12
-	sw $ra, 4($sp)
-	sw $a0, 0($sp)
-	la $v0, _store_string
-		
-	printC.add_day:
-		add $t2, $0, $0
-		la $t1, ($a0)
-		printC.dd_loop:
-			beq $t2, 2, printC.add_space
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j printC.dd_loop
-	
-	printC.add_space:
-		addi $t4, $0, 32
-		sb $t4, ($v0)
-		addi $v0, $v0, 1	
-	
-	printC.add_month:
-		
-		sw $v0, 8($sp)
-		jal month
-		add $t0, $v0, $0
-		addi $t0, $t0, -1
-		mul $t0, $t0, 3 # start index 
-	
-		addi $t1, $t0, 3 # end index
-	
-		la $t2, _month_string
-		lw $v0, 8($sp)
-		
-	printC.loop_month:
-		beq $t0, $t1, printC.add_comma
-		add $t3, $t0, $t2
-		lb $t4, ($t3)
-		sb $t4, ($v0)
-		
-		addi $t0, $t0, 1
-		addi $v0, $v0, 1
-		j printC.loop_month
-		
-	printC.add_comma: 
-		addi $t4, $0, 44
-		sb $t4, ($v0)
-		addi $v0, $v0, 1
-		
-		addi $t4, $0, 32
-		sb $t4, ($v0)
-		addi $v0, $v0, 1
-	
-	
-	printC.add_year:
-		
-		addi $t2, $0, 6
-		la $t1, ($a0)
-		printC.yy_loop:
-			beq $t2, 10, printC_out
-			add $t3, $t1, $t2
-			
-			lb $t0, ($t3) 
-			sb $t0, ($v0)
-			addi $t2, $t2, 1
-			addi $v0, $v0, 1
-			j printC.yy_loop
-	
-	printC_out:
-		addi $t2, $0, 10
-		sb $t2, ($v0)
-		addi $v0, $v0, 1
-		addi $t2, $0, 0
-		sb $t2, ($v0)
-		
-		la $a0, _store_string
-		li $v0, 4
-		syscall
-		
-
-		lw $ra, 4($sp)	
-		lw $a0, 0($sp)
-		
-		addi $sp, $sp, 12
-		jr $ra	
+	lw, $ra, 0($sp)
+	lw, $a0, 4($sp)
+	lw, $a1, 8($sp)
+	lw, $a2, 12($sp)
+	lw, $a3, 16($sp)
+	lw, $t0, 20($sp)
+	lw, $t1, 24($sp)
+	lw, $t2, 28($sp)
+	lw, $t3, 32($sp)
+	lw, $t4, 36($sp)
+	addi $sp, $sp, 40
+	jr $ra
 
 # int Day(char* TIME)
-day:
+Day:
 	addi $sp, $sp, -24
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -584,16 +578,16 @@ day:
 	add $t0, $0, $0
 	add $t1, $0, $a0
 	addi $t2, $0, 0
-	day_loop:
-		beq $t2, 2, day_out_loop
+	Day.loop:
+		beq $t2, 2, Day.out
 		add $t3, $t1, $t2
 		lb $t3, 0($t3)
 		addi $t3, $t3, -48
 		mul $t0, $t0, 10
 		add $t0, $t0, $t3
 		addi $t2, $t2, 1
-		j day_loop
-	day_out_loop:
+		j Day.loop
+	Day.out:
 	add $v0, $0, $t0
 
 	lw $ra, 0($sp)
@@ -606,7 +600,7 @@ day:
 	jr $ra	
 	
 # int Month(char* TIME)
-month:
+Month:
 	addi $sp, $sp, -24
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -618,16 +612,16 @@ month:
 	add $t0, $0, $0
 	add $t1, $0, $a0
 	addi $t2, $0, 3
-	month_loop:
-		beq $t2, 5, month_out_loop
+	Month.loop:
+		beq $t2, 5, Month.out
 		add $t3, $t1, $t2
 		lb $t3, 0($t3)
 		addi $t3, $t3, -48
 		mul $t0, $t0, 10
 		add $t0, $t0, $t3
 		addi $t2, $t2, 1
-		j month_loop
-	month_out_loop:
+		j Month.loop
+	Month.out:
 	add $v0, $0, $t0
 
 	lw $ra, 0($sp)
@@ -640,7 +634,7 @@ month:
 	jr $ra	
 
 # int Year(char* TIME)
-year:
+Year:
 	addi $sp, $sp, -24
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -652,16 +646,16 @@ year:
 	add $t0, $0, $0
 	add $t1, $0, $a0
 	addi $t2, $0, 6
-	year_loop:
-		beq $t2, 10, year_out_loop
+	Year.loop:
+		beq $t2, 10, Year.out
 		add $t3, $t1, $t2
 		lb $t3, 0($t3)
 		addi $t3, $t3, -48
 		mul $t0, $t0, 10
 		add $t0, $t0, $t3
 		addi $t2, $t2, 1
-		j year_loop
-	year_out_loop:
+		j Year.loop
+	Year.out:
 	add $v0, $0, $t0
 
 	lw $ra, 0($sp)
@@ -674,7 +668,7 @@ year:
 	jr $ra
 	
 # char* Weekday(char* TIME)
-weekday:
+Weekday:
 	addi $sp, $sp, -32
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -685,21 +679,21 @@ weekday:
 	sw $t4, 24($sp)
 	sw $t5, 28($sp)
 	
-	jal day
+	jal Day
 	add $t0, $0, $v0
-	jal month
+	jal Month
 	add $t1, $0, $v0
-	jal year
+	jal Year
 	add $t2, $0, $v0
-	jal leap_year
+	jal LeapYear
 	add $t3, $0, $v0
 	
-	bne $t3, $0, weekday_leap_year
+	bne $t3, $0, Weekday.leap_year
 	la $t5, _month_table
-	j weekday_leap_year_out
-	weekday_leap_year:
+	j Weekday.leap_year_out
+	Weekday.leap_year:
 		la $t5, _month_table_leap_year
-	weekday_leap_year_out:
+	Weekday.leap_year_out:
 	addi $t1, $t1, -1
 	sll $t1, $t1, 2
 	add $t1, $t1, $t5
@@ -745,35 +739,35 @@ weekday:
 	
 
 # int LeapYear(char *TIME)
-leap_year:
+LeapYear:
 	addi $sp, $sp, -16
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
 	sw $t0, 8($sp)
 	sw $t1, 12($sp)
 	
-	jal year
+	jal Year
 	add $t0, $0, $v0
 	addi $t1, $0, 400
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_true
+	beq $t1, $0, LeapYear.true
 	addi $t1, $0, 100
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_false
+	beq $t1, $0, LeapYear.false
 	addi $t1, $0, 4
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_true
-	leap_year_false:
+	beq $t1, $0, LeapYear.true
+	LeapYear.false:
 		addi $v0, $0, 0
-		j leap_year_out
-	leap_year_true:
+		j LeapYear.out
+	LeapYear.true:
 		addi $v0, $0, 1
-		j leap_year_out
+		j LeapYear.out
 		
-	leap_year_out:
+	LeapYear.out:
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
 	lw $t0, 8($sp)
@@ -781,7 +775,8 @@ leap_year:
 	addi $sp, $sp, 16
 	jr $ra
 	
-leap_year_int:
+# int LeapYearInt(int year)
+LeapYearInt:
 	addi $sp, $sp, -16
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -793,22 +788,22 @@ leap_year_int:
 	addi $t1, $0, 400
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_int_true
+	beq $t1, $0, LeapYearInt.true
 	addi $t1, $0, 100
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_int_false
+	beq $t1, $0, LeapYearInt.false
 	addi $t1, $0, 4
 	div $t0, $t1
 	mfhi $t1
-	beq $t1, $0, leap_year_int_true
-	leap_year_int_false:
+	beq $t1, $0, LeapYearInt.true
+	LeapYearInt.false:
 		addi $v0, $0, 0
-		j leap_year_int_out
-	leap_year_int_true:
+		j LeapYearInt.out
+	LeapYearInt.true:
 		addi $v0, $0, 1
-		j leap_year_int_out
-	leap_year_int_out:
+		j LeapYearInt.out
+	LeapYearInt.out:
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
 	lw $t0, 8($sp)
@@ -817,17 +812,23 @@ leap_year_int:
 	jr $ra
 
 count_days:
-	addi $sp, $sp, -8
-	sw $ra, 4($sp)
-	sw $a0, 0($sp)
+	addi $sp, $sp, -32
+	sw $ra, 0($sp)
+	sw $a0, 4($sp)
+	sw $t0, 8($sp)
+	sw $t1, 12($sp)
+	sw $t2, 16($sp)
+	sw $t3, 20($sp)
+	sw $t4, 24($sp)
+	sw $t5, 28($sp)
 	
-	jal day
+	jal Day
 	add $t1, $v0, $0
 	
-	jal month
+	jal Month
 	add $t2, $v0, $0
 	
-	jal year
+	jal Year
 	add $t3, $v0, $0
 	
 	mul $t4, $t3, 365
@@ -848,7 +849,6 @@ count_days:
 		lw $t5, 0($t5) 
 		
 		add $v0, $v0, $t5
-		
 	
 		j count_days.plus_month 
 		
@@ -858,8 +858,6 @@ count_days:
 		slt $t5, $t4, $t2
 		bne $t5, $0, count_days.plus_num_leapyears
 		addi $t3, $t3, -1
-		
-	
 	 
 	count_days.plus_num_leapyears:
 		addi $t4, $0, 4
@@ -880,16 +878,25 @@ count_days:
 	
 	count_days.out:
 		
-		lw $ra, 4($sp)
-	  	lw $a0, 0($sp)
-	  	addi $sp, $sp, 8
-	  	jr $ra
+	lw $ra, 0($sp)
+	lw $a0, 4($sp)
+	lw $t0, 8($sp)
+	lw $t1, 12($sp)
+	lw $t2, 16($sp)
+	lw $t3, 20($sp)
+	lw $t4, 24($sp)
+	lw $t5, 28($sp)
+  	addi $sp, $sp, 32
+  	jr $ra
 
+# int GetTime(char* TIME_1, char* TIME_2)
 GetTime:
-	addi $sp, $sp, 20
+	addi $sp, $sp, -28
 	sw $ra, 8($sp)
 	sw $a0, 4($sp)
 	sw $a1, 0($sp)
+	sw $a0, 20($sp)
+	sw $a1, 24($sp)
 	
 	jal count_days
 	add $t1, $v0, $0
@@ -901,14 +908,25 @@ GetTime:
 	
 	lw $t1, 16($sp)
 	sub $v0, $t2, $t1
+	slt $t3, $t2, $t1
+	beq $t3, $0, GetTime.continue
+	
+	sub $v0, $t1, $t2
+	lw $t3, 4($sp)
+	lw $t4, 0($sp)
+	sw $t3, 0($sp)
+	sw $t4, 4($sp)
+	
+	
+	GetTime.continue:
 	sw $v0, 12($sp)
 	
 
 	lw $a0, 4($sp)
-	jal year
+	jal Year
 	add $t1, $v0, $0
 	
-	jal month
+	jal Month
 	addi $t2, $0, 2
 	slt $t3, $t2, $v0
 	beq $t3, $0, GetTime.checkdate2
@@ -917,11 +935,11 @@ GetTime:
 	
 	GetTime.checkdate2:	
 		lw $a0, 0($sp)
-		jal year
+		jal Year
 		add $t2, $v0, $0
 		
 
-		jal month
+		jal Month
 		addi $t3, $0, 2
 		slt $t4, $t3, $v0
 		
@@ -933,7 +951,7 @@ GetTime:
 		j GetTime.checkleapyear
 		
 		GetTime.checkday29:
-			jal day
+			jal Day
 			addi $t3, $0, 29
 			beq $v0, $t3, GetTime.checkleapyear
 			addi $t2, $t2, -1
@@ -947,7 +965,7 @@ GetTime:
 		GetTime.checkleapyear_loop:
 			add $a0, $t3, $0
 
-			jal leap_year_int
+			jal LeapYearInt
 						
 			add $t4, $t4, $v0
 			beq $t3, $t2, GetTime.out
@@ -963,13 +981,13 @@ GetTime:
 		mflo $v0
 		
 		lw $ra, 8($sp)
-		lw $a0, 4($sp)
-		lw $a1, 0($sp)
-		addi $sp, $sp, 20			
+		lw $a0, 20($sp)
+		lw $a1, 24($sp)
+		addi $sp, $sp, 28			
 		jr $ra
 
 # NearestLeapYears(char* TIME)
-nearest_leap_years:
+NearestLeapYears:
 	addi $sp, $sp, -24
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -978,40 +996,40 @@ nearest_leap_years:
 	sw $t2, 16($sp)
 	sw $t3, 20($sp)
 	
-	jal year
+	jal Year
 	add $t0, $0, $v0
 	
 	add $t1, $0, $0
 	add $t2, $0, $t0
-	nearest_leap_years_prev:
-		bne $t1, $0, nearest_leap_years_prev_out
+	NearestLeapYears.prev:
+		bne $t1, $0, NearestLeapYears.prev_out
 		addi $t2, $t2, -1
 		add $a0, $0, $0
 		add $a1, $0, $0
 		add $a2, $0, $t2
-		la $a3, _time
-		jal date
+		la $a3, _temp
+		jal Date
 		add $a0, $0, $v0
-		jal leap_year
+		jal LeapYear
 		add $t1, $0, $v0
-		j nearest_leap_years_prev
-	nearest_leap_years_prev_out:
+		j NearestLeapYears.prev
+	NearestLeapYears.prev_out:
 	
 	add $t1, $0, $0
 	add $t3, $0, $t0
-	nearest_leap_years_next:
-		bne $t1, $0, nearest_leap_years_next_out
+	NearestLeapYears.next:
+		bne $t1, $0, NearestLeapYears.next_out
 		addi $t3, $t3, 1
 		add $a0, $0, $0
 		add $a1, $0, $0
 		add $a2, $0, $t3
-		la $a3, _time
-		jal date
+		la $a3, _temp
+		jal Date
 		add $a0, $0, $v0
-		jal leap_year
+		jal LeapYear
 		add $t1, $0, $v0
-		j nearest_leap_years_next
-	nearest_leap_years_next_out:
+		j NearestLeapYears.next
+	NearestLeapYears.next_out:
 
 	add $v0, $0, $t2
 	add $v1, $0, $t3
@@ -1026,22 +1044,22 @@ nearest_leap_years:
 	jr $ra
 
 # bool IsNum(char ch)
-is_num:
+IsNum:
 	addi $sp, $sp, -12
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
 	sw $t0, 8($sp)
 	
 	slti $t0, $a0, '0'
-	bne $t0, $0, is_num_false
+	bne $t0, $0, IsNum.false
 	slti $t0, $a0, ':' # '9' + 1
-	beq $t0, $0, is_num_false
+	beq $t0, $0, IsNum.false
 	addi $v0, $0, 1
-	j is_num_out
+	j IsNum.out
 	
-	is_num_false:
+	IsNum.false:
 		addi $v0, $0, 0
-	is_num_out:
+	IsNum.out:
 	
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
@@ -1050,50 +1068,52 @@ is_num:
 	jr $ra
 
 # int DaysInMonth(int month, int year)
-days_in_month:
-	addi $sp, $sp, -16
+DaysInMonth:
+	addi $sp, $sp, -20
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
 	sw $a1, 8($sp)
 	sw $a2, 12($sp)
+	sw $a3, 16($sp)
 	
-	beq $a0, 4, days_in_month_l1
-	beq $a0, 6, days_in_month_l1
-	beq $a0, 9, days_in_month_l1
-	beq $a0, 11, days_in_month_l1
-	beq $a0, 2, days_in_month_l2
+	beq $a0, 4, DaysInMonth.l1
+	beq $a0, 6, DaysInMonth.l1
+	beq $a0, 9, DaysInMonth.l1
+	beq $a0, 11, DaysInMonth.l1
+	beq $a0, 2, DaysInMonth.l2
 	
 	addi $v0, $0, 31
-	j days_in_month_out
+	j DaysInMonth.out
 	
-	days_in_month_l1:
+	DaysInMonth.l1:
 		addi $v0, $0, 30
-		j days_in_month_out
-	days_in_month_l2:
+		j DaysInMonth.out
+	DaysInMonth.l2:
 		add $a2, $0, $a1
 		add $a0, $0, $0
 		add $a1, $0, $0
-		la $a3, _time
-		jal date
+		la $a3, _temp
+		jal Date
 		add $a0, $0, $v0
-		jal leap_year
-		bne $v0, $0, days_in_month_l2_leap
+		jal LeapYear
+		bne $v0, $0, DaysInMonth.l2_leap
 		addi $v0, $0, 28
-		j days_in_month_out
-		days_in_month_l2_leap:
+		j DaysInMonth.out
+		DaysInMonth.l2_leap:
 			addi $v0, $0, 29
 	
-	days_in_month_out:
+	DaysInMonth.out:
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
 	lw $a1, 8($sp)
 	lw $a2, 12($sp)
-	addi $sp, $sp, 16
+	lw $a3, 16($sp)
+	addi $sp, $sp, 20
 	jr $ra
 
 
 # bool IsValid(char *TIME)
-is_valid:
+IsValid:
 	addi $sp, $sp, -24
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -1106,67 +1126,67 @@ is_valid:
 	
 	# day
 	lb $a0, 0($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	lb $a0, 1($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	# month
 	lb $a0, 3($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	lb $a0, 4($t0)
-	jal is_num
+	jal IsNum
 	# year
-	beq $v0, $0, is_valid_false
+	beq $v0, $0, IsValid.false
 	lb $a0, 6($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	lb $a0, 7($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	lb $a0, 8($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	lb $a0, 9($t0)
-	jal is_num
-	beq $v0, $0, is_valid_false
+	jal IsNum
+	beq $v0, $0, IsValid.false
 	# check slashes (not necessary)
 	lb $t1, 2($t0)
-	bne $t1, '/', is_valid_false
+	bne $t1, '/', IsValid.false
 	lb $t1, 5($t0)
-	bne $t1, '/', is_valid_false
+	bne $t1, '/', IsValid.false
 	
 	add $a0, $0, $t0
-	jal day
+	jal Day
 	add $t0, $0, $v0
-	jal month
+	jal Month
 	add $t1, $0, $v0
-	jal year
+	jal Year
 	add $t2, $0, $v0
 	
 	# check month range
 	slti $t3, $t1, 1
-	bne $t3, $0, is_valid_false
+	bne $t3, $0, IsValid.false
 	slti $t3, $t1, 13
-	beq $t3, $0, is_valid_false
+	beq $t3, $0, IsValid.false
 	
 	# check day range
 	add $a0, $0, $t1
 	add $a1, $0, $t2
-	jal days_in_month
+	jal DaysInMonth
 	add $t1, $0, $v0
 	slti $t3, $t0, 1
-	bne $t3, $0, is_valid_false
+	bne $t3, $0, IsValid.false
 	slt $t3, $t1, $t0
-	bne $t3, $0, is_valid_false
+	bne $t3, $0, IsValid.false
 	
 	addi $v0, $0, 1
-	j is_valid_out
+	j IsValid.out
 	
-	is_valid_false:
+	IsValid.false:
 		addi $v0, $0, 0
-	is_valid_out:
+	IsValid.out:
 	
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
@@ -1176,6 +1196,5 @@ is_valid:
 	lw $t3, 20($sp)
 	addi $sp, $sp, 24
 	jr $ra
-	
 
 out_main:
