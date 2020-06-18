@@ -1,6 +1,6 @@
 	.data
 check:	.asciiz "Check"
-data:	.asciiz "21/12/2020"
+data:	.asciiz "18/06/2020"
 time:	.byte 0:11
 month_table:		.word 0 3 3 6 1 4 6 2 5 0 3 5
 month_table_leap_year:	.word 6 2 3 6 1 4 6 2 5 0 3 5
@@ -33,12 +33,12 @@ result:	.asciiz "\nKet qua: "
 	.text
 # void main()
 main:
-	la $a0, data
-	jal weekday
-	add $a0, $0, $v0
-	li $v0, 4
-	syscall
-	j out_main
+#	la $a0, data
+#	jal weekday
+#	add $a0, $0, $v0
+#	li $v0, 4
+#	syscall
+#	j out_main
 	
 	# Scan day, month, year
 	# Temporarily format xx, xx, xxxx (e.g. 02, 12, 2000)
@@ -85,11 +85,6 @@ main:
 	la $a3, time
 	jal date
 	
-	# Just for check
-	la $a0, time
-	li $v0, 4
-	syscall
-	
 	# Print options
 	la $a0, start_option
 	li $v0, 4
@@ -134,23 +129,72 @@ main:
 	syscall
 	add $s3, $0, $v0
 	
+	la $a0, result
+	li $v0, 4
+	syscall
+	
+	beq $s3, 1, main_option1
+	beq $s3, 3, main_option3
+	beq $s3, 4, main_option4
+	beq $s3, 6, main_option6
+	
+	
+	main_option1:
+		la $a0, time
+		li $v0, 4
+		syscall
+		j main_option_out
+		
+	main_option3:
+		la $a0, time
+		jal weekday
+		add $a0, $0, $v0
+		li $v0, 4
+		syscall
+		j main_option_out
+		
+	main_option4:
+		la $a0, time
+		jal leap_year
+		add $a0, $0, $v0
+		li $v0, 1
+		syscall
+		j main_option_out
+		
+	main_option6:
+		la $a0, time
+		jal nearest_leap_years
+		add $a0, $0, $v0
+		li $v0, 1
+		syscall
+		li $a0, ' '
+		li $v0, 11
+		syscall
+		add $a0, $0, $v1
+		li $v0, 1
+		syscall
+		j main_option_out
+	
+	main_option_out:
+	
 	j out_main
 
-# int StringToInt(char* str, int size)
+# int StringToInt(char* str)
 string_to_int:
-	addi $sp, $sp, -20
+	addi $sp, $sp, -16
 	sw $ra, 0($sp)
-	sw $a0, 4($sp) # str
-	sw $a1, 8($sp) # size
-	sw $t0, 12($sp)
-	sw $t1, 16($sp)
+	sw $a0, 4($sp)
+	sw $t0, 8($sp)
+	sw $t1, 12($sp)
 	
 	addi $v0, $0, 0
 	addi $t0, $0, 0
 	string_to_int_loop:
-		beq $t0, $a1, string_to_int_out
 		add $t1, $a0, $t0
 		lb $t1, 0($t1)
+		beq $t1, $0, string_to_int_out
+		beq $t1, '\n', string_to_int_out
+		beq $t1, ' ', string_to_int_out
 		addi $t1, $t1, -48
 		mul $v0, $v0, 10
 		add $v0, $v0, $t1
@@ -160,10 +204,9 @@ string_to_int:
 	
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
-	lw $a1, 8($sp)
-	lw $t0, 12($sp)
-	lw $t1, 16($sp)
-	addi $sp, $sp, 20
+	lw $t0, 8($sp)
+	lw $t1, 12($sp)
+	addi $sp, $sp, 16
 	jr $ra
 	
 
