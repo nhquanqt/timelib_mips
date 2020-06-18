@@ -1,26 +1,148 @@
 	.data
-check:	.ascii "Check"
-data:	.ascii "25/06/2021"
-slash:	.byte '/'
-time:	.byte
+check:	.asciiz "Check"
+data:	.asciiz "25/06/2021"
+time:	.byte 0:10
+
+inday:		.asciiz "\nNhap ngay DAY: "
+inmonth:	.asciiz "\nNhap thang MONTH: "
+inyear:		.asciiz "\nNhap nam YEAR: "
+sday:	.byte 0:3
+smonth:	.byte 0:3
+syear:	.byte 0:5
+
+start_option:	.asciiz "\n----------Ban hay chon 1 trong cac thao tac duoi day -----------\n"
+option1:	.asciiz "1. Xuat chuoi TIME theo đinh dang DD/MM/YYYY\n"
+option2:	.asciiz "2. Chuyen doi chuoi TIME thanh mot trong cac dinh dang sau:\n"
+option2A:	.asciiz "	A. MM/DD/YYYY\n"
+option2B:	.asciiz "	B. Month DD, YYYY\n"
+option2C:	.asciiz "	C. DD Month, YYYY\n"
+option3:	.asciiz "3. Cho biet ngay vua nhap la ngay thu may trong tuan\n"
+option4:	.asciiz "4. Kiem tra nam trong chuoi TIME có phải la nam nhuan khong\n"
+option5:	.asciiz "5. Cho biet khoang thoi gian giua chuoi TIME_1 và TIME_2\n"
+option6:	.asciiz "6. Cho biet 2 nam nhuan gan nhat voi nam trong chuoi time\n"
+end_option:	.asciiz "----------------------------------------------------------------\n"
+
+choose_option:	.asciiz "\nLua chon: "
+option:	.byte 0
+result:	.asciiz "\nKet qua: "
 
 	.text
 # void main()
 main:
-	la $a0, data
-	jal is_valid
-
-#	addi $a0, $0, 25
-#	addi $a1, $0, 2
-#	addi $a2, $0, 2019
-#	la $a3, time
-#	jal date
+	# Scan day, month, year
+	# Temporately format xx, xx, xxxx (e.g. 02, 12, 2000)
+	la $a0, inday
+	li $v0, 4
+	syscall
+	la $a0, sday
+	addi $a1, $0, 3
+	li $v0, 8
+	syscall
+	# save day to $s0
+	addi $a1, $a1, -1
+	jal string_to_int
+	add $s0, $0, $v0
 	
-#	add $a0, $0, $v0
-#	li $v0, 4
-#	syscall
+	la $a0, inmonth
+	li $v0, 4
+	syscall
+	la $a0, smonth
+	addi $a1, $0, 3
+	li $v0, 8
+	syscall
+	# save month to $s1
+	addi $a1, $a1, -1
+	jal string_to_int
+	add $s1, $0, $v0
+	
+	la $a0, inyear
+	li $v0, 4
+	syscall
+	la $a0, syear
+	addi $a1, $0, 5
+	li $v0, 8
+	syscall
+	# save month to $s2
+	addi $a1, $a1, -1
+	jal string_to_int
+	add $s2, $0, $v0
+	
+	# Print options
+	la $a0, start_option
+	li $v0, 4
+	syscall
+	la $a0, option1
+	li $v0, 4
+	syscall
+	la $a0, option2
+	li $v0, 4
+	syscall
+	la $a0, option2A
+	li $v0, 4
+	syscall
+	la $a0, option2B
+	li $v0, 4
+	syscall
+	la $a0, option2C
+	li $v0, 4
+	syscall
+	la $a0, option3
+	li $v0, 4
+	syscall
+	la $a0, option4
+	li $v0, 4
+	syscall
+	la $a0, option5
+	li $v0, 4
+	syscall
+	la $a0, option6
+	li $v0, 4
+	syscall
+	la $a0, end_option
+	li $v0, 4
+	syscall
+
+	# Scan option
+	# Save option to $s3
+	la $a0, choose_option
+	li $v0, 4
+	syscall
+	li $v0, 5
+	syscall
+	add $s3, $0, $v0
 	
 	j out_main
+
+# int StringToInt(char* str, int size)
+string_to_int:
+	addi $sp, $sp, -20
+	sw $ra, 0($sp)
+	sw $a0, 4($sp) # str
+	sw $a1, 8($sp) # size
+	sw $t0, 12($sp)
+	sw $t1, 16($sp)
+	
+	addi $v0, $0, 0
+	addi $t0, $0, 0
+	string_to_int_loop:
+		beq $t0, $a1, string_to_int_out
+		add $t1, $a0, $t0
+		lb $t1, 0($t1)
+		addi $t1, $t1, -48
+		mul $v0, $v0, 10
+		add $v0, $v0, $t1
+		addi $t0, $t0, 1
+		j string_to_int_loop
+	string_to_int_out:
+	
+	lw $ra, 0($sp)
+	lw $a0, 4($sp)
+	lw $a1, 8($sp)
+	lw $t0, 12($sp)
+	lw $t1, 16($sp)
+	addi $sp, $sp, 20
+	jr $ra
+	
 
 # char* Date(int day, int month, int year, char* TIME)
 date:
