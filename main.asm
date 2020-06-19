@@ -1,5 +1,4 @@
 	.data
-_check:		.asciiz "Check"
 _data:		.asciiz "18/06/2020"
 _temp:		.byte 0:16
 _time:		.byte 0:16
@@ -7,7 +6,14 @@ _time1:		.byte 0:16
 _time2:		.byte 0:16
 _month_table:		.word 0 3 3 6 1 4 6 2 5 0 3 5
 _month_table_leap_year:	.word 6 2 3 6 1 4 6 2 5 0 3 5
-_dayofweek:		.ascii "SunMonTueWedThuFriSat"
+_dayofweek:		.word _sun, _mon, _tue, _wed, _thu, _fri, _sat
+	_sun:		.asciiz "Sunday"
+	_mon:		.asciiz "Monday"
+	_tue:		.asciiz "Tuesday"
+	_wed:		.asciiz "Wednesday"
+	_thu:		.asciiz "Thursday"
+	_fri:		.asciiz "Friday"
+	_sat:		.asciiz "Saturday"
 _out_weekday:		.byte 0:4
 
 _date_string:	.byte 0:16
@@ -43,6 +49,7 @@ _result:		.asciiz "\nKet qua: "
 	.text
 # void main()
 main:
+
 	la $a0, _scanned_date
 	jal ScanDate
 	
@@ -249,6 +256,7 @@ ScanDate:
 		syscall
 		# save day to $t0
 		jal StringToInt
+		beq $v1, $0, ScanDate.error
 		add $t0, $0, $v0
 		
 		la $a0, _inmonth
@@ -261,6 +269,7 @@ ScanDate:
 		syscall
 		# save month to $t1
 		jal StringToInt
+		beq $v1, $0, ScanDate.error
 		add $t1, $0, $v0
 		
 		la $a0, _inyear
@@ -273,6 +282,7 @@ ScanDate:
 		syscall
 		# save month to $t2
 		jal StringToInt
+		beq $v1, $0, ScanDate.error
 		add $t2, $0, $v0
 		
 		# Call date function
@@ -285,10 +295,11 @@ ScanDate:
 		add $a0, $0, $t3
 		jal IsValid
 		bne $v0, $0, ScanDate.end
-		la $a0, _scan_date_error
-		li $v0, 4
-		syscall
-		j ScanDate.start
+		ScanDate.error:
+			la $a0, _scan_date_error
+			li $v0, 4
+			syscall
+			j ScanDate.start
 	ScanDate.end:
 	
 	lw $ra, 0($sp)
@@ -302,7 +313,7 @@ ScanDate:
 	lw $t3, 32($sp)
 	addi $sp, $sp, 36
 
-# int StringToInt(char* str)
+# pair<int,int> StringToInt(char* str)
 StringToInt:
 	addi $sp, $sp, -20
 	sw $ra, 0($sp)
@@ -313,6 +324,7 @@ StringToInt:
 
 	addi $t2 $0, 0
 	add $t0, $0, $a0
+	addi $v1, $0, 1
 	StringToInt.loop:
 		lb $t1, 0($t0)
 		beq $t1, $0, StringToInt.out
@@ -331,6 +343,7 @@ StringToInt:
 	
 		StringToInt.not_num:
 			addi $t2, $0, 0
+			addi $v1, $0, 0
 	StringToInt.out:
 	add $v0, $0, $t2
 	
@@ -703,7 +716,6 @@ Weekday:
 	div $t2, $t4
 	mfhi $t2
 	mflo $t4
-#	addi $t4, $t4, 1
 	
 	add $v0, $t0, $t1
 	add $v0, $v0, $t2
@@ -716,15 +728,9 @@ Weekday:
 	mfhi $v0
 	
 	la $t0, _dayofweek
-	mul $t1, $v0, 3
-	add $t0, $t0, $t1
-	la $v0, _out_weekday
-	lb $t1, 0($t0)
-	sb $t1, 0($v0)
-	lb $t1, 1($t0)
-	sb $t1, 1($v0)
-	lb $t1, 2($t0)
-	sb $t1, 2($v0)
+	sll $v0, $v0, 2
+	add $t0, $t0, $v0
+	lw $v0, 0($t0)
 	
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
@@ -811,7 +817,7 @@ LeapYearInt:
 	addi $sp, $sp, 16
 	jr $ra
 
-count_days:
+CountDays:
 	addi $sp, $sp, -32
 	sw $ra, 0($sp)
 	sw $a0, 4($sp)
@@ -839,27 +845,27 @@ count_days:
 	
 	la $t0, _number_day_of_month
 	
-	count_days.plus_month:
+	CountDays.plus_month:
 		sll $t4, $t1, 2
 		addi $t1, $t1, 1
 		
-		beq $t1, $t2, count_days.count_leap_year
+		beq $t1, $t2, CountDays.count_leap_year
 		
 		add $t5, $t0, $t4
 		lw $t5, 0($t5) 
 		
 		add $v0, $v0, $t5
 	
-		j count_days.plus_month 
+		j CountDays.plus_month 
 		
-	count_days.count_leap_year:
+	CountDays.count_leap_year:
 		
 		addi $t4, $0, 2
 		slt $t5, $t4, $t2
-		bne $t5, $0, count_days.plus_num_leapyears
+		bne $t5, $0, CountDays.plus_num_leapyears
 		addi $t3, $t3, -1
 	 
-	count_days.plus_num_leapyears:
+	CountDays.plus_num_leapyears:
 		addi $t4, $0, 4
 		div $t3, $t4
 		mflo $t4
@@ -876,7 +882,7 @@ count_days:
 		add $v0, $v0, $t4
 	
 	
-	count_days.out:
+	CountDays.out:
 		
 	lw $ra, 0($sp)
 	lw $a0, 4($sp)
@@ -898,12 +904,12 @@ GetTime:
 	sw $a0, 20($sp)
 	sw $a1, 24($sp)
 	
-	jal count_days
+	jal CountDays
 	add $t1, $v0, $0
 	sw $t1, 16($sp)
 	
 	add $a0, $a1, $0
-	jal count_days
+	jal CountDays
 	add $t2, $v0, $0
 	
 	lw $t1, 16($sp)
@@ -1123,39 +1129,6 @@ IsValid:
 	sw $t3, 20($sp)
 	
 	add $t0, $0, $a0
-	
-	# day
-	lb $a0, 0($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	lb $a0, 1($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	# month
-	lb $a0, 3($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	lb $a0, 4($t0)
-	jal IsNum
-	# year
-	beq $v0, $0, IsValid.false
-	lb $a0, 6($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	lb $a0, 7($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	lb $a0, 8($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	lb $a0, 9($t0)
-	jal IsNum
-	beq $v0, $0, IsValid.false
-	# check slashes (not necessary)
-	lb $t1, 2($t0)
-	bne $t1, '/', IsValid.false
-	lb $t1, 5($t0)
-	bne $t1, '/', IsValid.false
 	
 	add $a0, $0, $t0
 	jal Day
